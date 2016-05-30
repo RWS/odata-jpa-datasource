@@ -30,6 +30,7 @@ import javax.persistence.Entity;
 
 /**
  * This post processor will scan for Entity annotated classes.
+ * @author Renze de Vries
  */
 @Component("PersistenceUnitPostProcessor")
 public class JpaPostProcessor implements PersistenceUnitPostProcessor {

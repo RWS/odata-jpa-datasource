@@ -24,8 +24,6 @@ import com.sdl.odata.api.edm.model.StructuralProperty;
 import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import com.sdl.odata.datasource.jpa.ODataJPAEntity;
 import com.sdl.odata.datasource.jpa.ODataJPAProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.persistence.Entity;
 import java.lang.reflect.Field;
@@ -34,9 +32,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This contains a set of utility methods related to JPA metadata annotations in the Odata metadata model.
+ * @author Renze de Vries
  */
 public final class JPAMetadataUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(JPAMetadataUtil.class);
 
     private JPAMetadataUtil() {
     }
@@ -61,7 +59,7 @@ public final class JPAMetadataUtil {
     }
 
     /**
-     * Get the jpa collection name for a given odata type
+     * Get the jpa collection name for a given odata type.
      * @param odataEntityType The odata class that should contain the needed JPA annotations
      * @return The name of the collection, or null if invalid annotations where present
      */
@@ -83,7 +81,7 @@ public final class JPAMetadataUtil {
     }
 
     /**
-     * Get the JPA collection name based on the entity setname and odata metadata model
+     * Get the JPA collection name based on the entity setname and odata metadata model.
      * @param entityDataModel The entity metadata model containing all odata metadata information
      * @param entitySetName The entity set for which to request the jpa collection name
      * @return The name of the JPA collection

@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 import static com.sdl.odata.api.processor.query.QueryResult.from;
 
 /**
- * @author renzedevries
+ * @author Renze de Vries
  */
 @Component
 public class JPADatasourceProvider implements DataSourceProvider {
@@ -81,10 +81,11 @@ public class JPADatasourceProvider implements DataSourceProvider {
     }
 
     @Override
-    public boolean isSuitableFor(ODataRequestContext requestContext, String entityType) throws ODataDataSourceException {
+    public boolean isSuitableFor(ODataRequestContext requestContext, String entityType)
+            throws ODataDataSourceException {
         Class<?> odataType = requestContext.getEntityDataModel().getType(entityType).getJavaType();
         ODataJPAEntity jpaAnnotation = odataType.getAnnotation(ODataJPAEntity.class);
-        if(jpaAnnotation != null) {
+        if (jpaAnnotation != null) {
             String jpaType = jpaAnnotation.value();
             return isValidEntityType(jpaType);
         }
@@ -98,7 +99,8 @@ public class JPADatasourceProvider implements DataSourceProvider {
     }
 
     @Override
-    public QueryOperationStrategy getStrategy(ODataRequestContext requestContext, QueryOperation operation, TargetType expectedODataEntityType) throws ODataException {
+    public QueryOperationStrategy getStrategy(ODataRequestContext requestContext, QueryOperation operation,
+                                              TargetType expectedODataEntityType) throws ODataException {
         EntityDataModel entityDataModel = requestContext.getEntityDataModel();
         final JPAQuery query = new JPAQueryStrategyBuilder(entityDataModel).build(operation);
         LOG.debug("JPA Query: {}", query);
@@ -136,11 +138,11 @@ public class JPADatasourceProvider implements DataSourceProvider {
         Map<String, Object> queryParams = jpaQuery.getQueryParams();
 
         try {
-            if(nrOfResults > 0) {
+            if (nrOfResults > 0) {
                 query.setMaxResults(nrOfResults);
             }
 
-            if(startPosition > 0) {
+            if (startPosition > 0) {
                 query.setFirstResult(startPosition);
             }
 

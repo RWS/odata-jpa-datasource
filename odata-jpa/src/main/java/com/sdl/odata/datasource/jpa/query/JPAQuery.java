@@ -17,6 +17,10 @@ package com.sdl.odata.datasource.jpa.query;
 
 import java.util.Map;
 
+/**
+ * The JPA Query containing the query string and parameters needed against the entitymanager.
+ * @author Renze de Vries
+ */
 public final class JPAQuery {
 
     private final String queryString;

@@ -43,7 +43,8 @@ import java.util.List;
 import static com.sdl.odata.datasource.jpa.builders.GeneratorUtil.getODataTypeName;
 
 /**
- * @author renzedevries
+ * The entity builder that converts a jpa type into an OData entity.
+ * @author Renze de Vries
  */
 public class EntityBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(EntityBuilder.class);
@@ -63,7 +64,7 @@ public class EntityBuilder {
 
     public Class<?> build() throws ODataDataSourceException {
         String odataTypeName = getODataTypeName(jpaPackage, jpaType, context.getOdataNamespace());
-        if(pool.getOrNull(odataTypeName) == null) {
+        if (pool.getOrNull(odataTypeName) == null) {
             pool.makeClass(odataTypeName);
         }
 
@@ -76,7 +77,7 @@ public class EntityBuilder {
             new PropertyBuilder(context, jpaType, generatedClass).build();
 
             Class<?> odataEntityClass = generatedClass.toClass();
-            LOG.info("Generated odata entity class: {}", odataEntityClass);
+            LOG.debug("Generated odata entity class: {}", odataEntityClass);
 
             return odataEntityClass;
         } catch (NotFoundException | CannotCompileException e) {
@@ -85,7 +86,8 @@ public class EntityBuilder {
     }
 
     private AnnotationsAttribute buildAnnotations(ConstPool constPool) throws JPADataMappingException {
-        AnnotationsAttribute classAnnotationAttribute = new AnnotationsAttribute(constPool, AnnotationsAttribute.visibleTag);
+        AnnotationsAttribute classAnnotationAttribute = new AnnotationsAttribute(constPool,
+                AnnotationsAttribute.visibleTag);
 
         Annotation entitySetAnnotation = new AnnotationBuilder(constPool, EdmEntitySet.class).build();
         Annotation entityAnnotation = buildEntityAnnotation(constPool);
@@ -124,7 +126,7 @@ public class EntityBuilder {
             }
 
             entityAnnotationBuilder.addValue("key", keys);
-        } catch(IntrospectionException e) {
+        } catch (IntrospectionException e) {
             throw new JPADataMappingException("Unable to read bean information");
         }
 

@@ -33,6 +33,8 @@ import java.util.Set;
  *
  * The main goal of this util class is to handle entities that has hibernate proxies.
  * The interceptor scan possible proxies and transforms it into empty values according to type.
+ *
+ * @author Renze de Vries
  */
 @Component
 public class ODataProxyProcessor {

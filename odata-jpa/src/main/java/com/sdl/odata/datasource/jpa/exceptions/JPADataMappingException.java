@@ -17,7 +17,9 @@ package com.sdl.odata.datasource.jpa.exceptions;
 
 
 /**
- * @author renzedevries
+ * The JPA Mapping exception.
+ *
+ * @author Renze de Vries
  */
 public class JPADataMappingException extends RuntimeException {
     public JPADataMappingException(String message) {

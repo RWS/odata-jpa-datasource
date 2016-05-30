@@ -15,10 +15,25 @@
  */
 package com.sdl.odata.datasource.jpa.query;
 
+/**
+ * Join operation data holder.
+ *
+ * @author Renze de Vries
+ */
 public class JoinString {
 
-    public static enum JoinType {
-        INNER, OUTER;
+    /**
+     * Joint type.
+     */
+    public enum JoinType {
+        /**
+         * Inner join.
+         */
+        INNER,
+        /**
+         * Outer join.
+         */
+        OUTER
     }
 
     private final JoinType joinType;

@@ -18,17 +18,23 @@ package com.sdl.odata.datasource.jpa.query;
 import com.sdl.odata.api.ODataException;
 import com.sdl.odata.api.ODataNotImplementedException;
 import com.sdl.odata.api.edm.model.EntityType;
-import com.sdl.odata.api.processor.query.*;
+import com.sdl.odata.api.processor.query.ArithmeticCriteriaValue;
+import com.sdl.odata.api.processor.query.ComparisonCriteria;
+import com.sdl.odata.api.processor.query.CompositeCriteria;
+import com.sdl.odata.api.processor.query.Criteria;
+import com.sdl.odata.api.processor.query.CriteriaValue;
+import com.sdl.odata.api.processor.query.LiteralCriteriaValue;
+import com.sdl.odata.api.processor.query.ModOperator$;
+import com.sdl.odata.api.processor.query.PropertyCriteriaValue;
 import com.sdl.odata.datasource.jpa.util.JPAMetadataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.StringBuilder;
 
 /**
  * This class builds where clause for given criteria.
  *
- * @author Seeta Vadali
+ * @author Renze de Vries
  */
 public class JPAWhereStrategyBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(JPAWhereStrategyBuilder.class);
@@ -98,7 +104,8 @@ public class JPAWhereStrategyBuilder {
         jpaQueryBuilder.addParam(paramName, value.value());
     }
 
-    private void buildFromArithmeticCriteriaValue(ArithmeticCriteriaValue value, StringBuilder builder) throws ODataException {
+    private void buildFromArithmeticCriteriaValue(ArithmeticCriteriaValue value, StringBuilder builder)
+            throws ODataException {
         // The MOD operator has to be treated as a special case, because it has a different syntax in JPQL
         if (value.operator() == ModOperator$.MODULE$) {
             builder.append("MOD(");

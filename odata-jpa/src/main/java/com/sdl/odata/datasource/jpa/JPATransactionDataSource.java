@@ -23,6 +23,10 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 
+/**
+ * This is the transactionable datasource that allows running a longer transaction across operations.
+ * @author Renze de Vries
+ */
 @Component
 @Scope("prototype")
 public class JPATransactionDataSource extends JPADataSource implements TransactionalDataSource {
@@ -33,7 +37,7 @@ public class JPATransactionDataSource extends JPADataSource implements Transacti
 
     @PostConstruct
     public void initializeTransaction() {
-        entityManager = entityManagerFactory.createEntityManager();
+        entityManager = getEntityManagerFactory().createEntityManager();
         entityTransaction = entityManager.getTransaction();
         entityTransaction.begin();
     }

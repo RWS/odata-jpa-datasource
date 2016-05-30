@@ -20,7 +20,7 @@ import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import java.util.List;
 
 /**
- * @author renzedevries
+ * @author Renze de Vries
  */
 public interface JPAODataEntityGenerator {
     List<Class<?>> generateODataEntityClasses(List<Class<?>> jpaEntities) throws ODataDataSourceException;

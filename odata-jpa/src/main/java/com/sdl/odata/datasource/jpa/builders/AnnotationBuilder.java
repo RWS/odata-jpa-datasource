@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author renzedevries
+ * @author Renze de Vries
  */
 public class AnnotationBuilder {
 
@@ -62,13 +62,14 @@ public class AnnotationBuilder {
     public Annotation build() throws JPADataMappingException {
         Annotation generatedAnnotation = new Annotation(annotation.getName(), constPool);
 
-        for(Map.Entry<String, Collection<Object>> entry : multimap.asMap().entrySet()) {
+        for (Map.Entry<String, Collection<Object>> entry : multimap.asMap().entrySet()) {
             String annotationPropertyName = entry.getKey();
             Collection<Object> values = entry.getValue();
 
-            if(values.size() == SINGLE_ENTRY) {
-                generatedAnnotation.addMemberValue(annotationPropertyName, generateMemberValue(values.iterator().next()));
-            } else if(!values.isEmpty()) {
+            if (values.size() == SINGLE_ENTRY) {
+                generatedAnnotation.addMemberValue(annotationPropertyName,
+                        generateMemberValue(values.iterator().next()));
+            } else if (!values.isEmpty()) {
                 generatedAnnotation.addMemberValue(annotationPropertyName, generateArrayValues(values));
             }
         }
@@ -80,7 +81,7 @@ public class AnnotationBuilder {
         ArrayMemberValue memberValue = new ArrayMemberValue(constPool);
 
         List<MemberValue> memberValueList = new ArrayList<>();
-        for(Object value : values) {
+        for (Object value : values) {
             memberValueList.add(generateMemberValue(value));
         }
 
@@ -90,10 +91,10 @@ public class AnnotationBuilder {
     }
 
     private MemberValue generateMemberValue(Object value) throws JPADataMappingException {
-        if(value instanceof String) {
+        if (value instanceof String) {
             return new StringMemberValue(value.toString(), constPool);
-        } else if(value instanceof List) {
-            return generateArrayValues((List)value);
+        } else if (value instanceof List) {
+            return generateArrayValues((List) value);
         }
 
         throw new JPADataMappingException("Unable to map annotation value, unsupported type");

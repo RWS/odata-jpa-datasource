@@ -20,6 +20,11 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 
+/**
+ * PhotoItem entity.
+ *
+ * @author Renze de Vries
+ */
 @Entity(name = "PHOTOS")
 public class PhotoItem {
     private String id;

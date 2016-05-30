@@ -17,7 +17,11 @@ package com.sdl.odata.datasource.jpa.builders;
 
 import java.util.List;
 
-public class TransformContext {
+/**
+ * The Transformation context containing all information needed in the JPA to OData entity transformation.
+ * @author Renze de Vries
+ */
+public final class TransformContext {
     private final List<Class<?>> jpaClasses;
     private final String odataNamespace;
 

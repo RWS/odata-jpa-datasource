@@ -20,15 +20,16 @@ import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import java.lang.reflect.Field;
 
 /**
- * Small utility class that contains reflection shortcuts
+ * Small utility class that contains reflection shortcuts.
+ * @author Renze de Vries
  */
-public class ReflectionUtil {
+public final class ReflectionUtil {
     private ReflectionUtil() {
 
     }
 
     /**
-     * Creates a new instance of the class
+     * Creates a new instance of the class.
      * @param cls The class to create new instance for
      * @param <T> The type of the class
      * @return The instance of the class
@@ -48,14 +49,14 @@ public class ReflectionUtil {
 
     public static <T> Class<T> newClass(String className) throws ODataDataSourceException {
         try {
-            return (Class<T>)Class.forName(className);
+            return (Class<T>) Class.forName(className);
         } catch (ClassNotFoundException e) {
             throw new ODataDataSourceException("Cannot create class of: " + className, e);
         }
     }
 
     /**
-     * Gets the field in a certain class for the given field name
+     * Gets the field in a certain class for the given field name.
      * @param cls The class to get the field from
      * @param fieldName The name of the field
      * @return The Field instance
@@ -70,7 +71,7 @@ public class ReflectionUtil {
     }
 
     /**
-     * Reads the field data by getting the object
+     * Reads the field data by getting the object.
      * @param field The field to get the field value for
      * @param object The object instance that contains the field
      * @return The raw object for the field
@@ -86,7 +87,7 @@ public class ReflectionUtil {
     }
 
     /**
-     * Writes the object to the field
+     * Writes the object to the field.
      * @param field The field to write the object to
      * @param object The object instance on which the field is present
      * @param value The value to write to the field

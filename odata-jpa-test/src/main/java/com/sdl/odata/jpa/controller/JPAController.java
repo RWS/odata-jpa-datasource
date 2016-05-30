@@ -19,6 +19,10 @@ import com.sdl.odata.controller.AbstractODataController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * The default entrypoint for the JPA example datasource.
+ * @author Renze de Vries
+ */
 @RestController
 @RequestMapping("/jpa.svc/**")
 public class JPAController extends AbstractODataController {

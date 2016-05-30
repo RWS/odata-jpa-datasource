@@ -22,18 +22,35 @@ import com.sdl.odata.api.ODataSystemException;
 import com.sdl.odata.api.edm.model.EntityDataModel;
 import com.sdl.odata.api.edm.model.EntitySet;
 import com.sdl.odata.api.edm.model.EntityType;
-import com.sdl.odata.api.processor.query.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.sdl.odata.api.processor.query.CriteriaFilterOperation;
+import com.sdl.odata.api.processor.query.ExpandOperation;
+import com.sdl.odata.api.processor.query.JoinOperation;
+import com.sdl.odata.api.processor.query.JoinSelect;
+import com.sdl.odata.api.processor.query.JoinSelectLeft$;
+import com.sdl.odata.api.processor.query.JoinSelectRight$;
+import com.sdl.odata.api.processor.query.LimitOperation;
+import com.sdl.odata.api.processor.query.OrderByOperation;
+import com.sdl.odata.api.processor.query.OrderByProperty;
+import com.sdl.odata.api.processor.query.QueryOperation;
+import com.sdl.odata.api.processor.query.SelectByKeyOperation;
+import com.sdl.odata.api.processor.query.SelectOperation;
+import com.sdl.odata.api.processor.query.SelectPropertiesOperation;
+import com.sdl.odata.api.processor.query.SkipOperation;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.sdl.odata.datasource.jpa.util.JPAMetadataUtil.getJPACollectionName;
 import static com.sdl.odata.datasource.jpa.util.JPAMetadataUtil.getJPAPropertyName;
 
+/**
+ * JPA Strategy for building a JPA query from the OData query model.
+ * @author Renze de Vries
+ */
 public final class JPAQueryStrategyBuilder {
-    private static final Logger LOG = LoggerFactory.getLogger(JPAQueryStrategyBuilder.class);
-
     private final EntityDataModel entityDataModel;
 
     private int aliasCount = 0;
@@ -162,7 +179,7 @@ public final class JPAQueryStrategyBuilder {
 
     private JPAQueryBuilder buildFromCriteriaFilter(CriteriaFilterOperation operation) throws ODataException {
         JPAQueryBuilder builder = buildFromOperation(operation.getSource());
-        JPAWhereStrategyBuilder whereStrategyBuilder=
+        JPAWhereStrategyBuilder whereStrategyBuilder =
             new JPAWhereStrategyBuilder(
                 getUnderlyingEntityType(operation.getSource()),
                 builder);

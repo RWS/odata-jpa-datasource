@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author rdevries
+ * @author Renze de Vries
  */
 @Component
 public class JPAODataEntityGeneratorImpl implements JPAODataEntityGenerator {
@@ -41,7 +41,7 @@ public class JPAODataEntityGeneratorImpl implements JPAODataEntityGenerator {
         LOG.info("Generating entities for {} JPA entities", jpaEntities.size());
         List<Class<?>> odataEntities = new ArrayList<>();
         TransformContext context = new TransformContext(jpaEntities, odataNamespace);
-        for(Class<?> jpaEntity : jpaEntities) {
+        for (Class<?> jpaEntity : jpaEntities) {
             LOG.info("Generating OData entity for JPA Entity: {}", jpaEntity.getName());
             Class<?> odataEntity = new EntityBuilder(jpaEntity, context).build();
 

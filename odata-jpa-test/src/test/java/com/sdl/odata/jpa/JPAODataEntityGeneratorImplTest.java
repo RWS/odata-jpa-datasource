@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tridion.odata.datasource.jpa;
+package com.sdl.odata.jpa;
 
 import com.sdl.odata.api.edm.ODataEdmException;
-import com.sdl.odata.api.edm.model.EntityDataModel;
 import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import com.sdl.odata.datasource.jpa.JPAODataEntityGeneratorImpl;
 import com.sdl.odata.edm.factory.annotations.AnnotationEntityDataModelFactory;
@@ -30,27 +29,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author renzedevries
+ * @author Renze de Vries
  */
 public class JPAODataEntityGeneratorImplTest {
     private static final Logger LOG = LoggerFactory.getLogger(JPAODataEntityGeneratorImplTest.class);
 
-    private static List<Class<?>> ENTITY_CLASSES = new ArrayList<Class<?>>() {{
+    private static final List<Class<?>> ENTITIES = new ArrayList<Class<?>>() { {
         add(PhotoItem.class);
         add(User.class);
-    }};
+    } };
 
     @Test
     public void testGenerateODataEntities() throws ODataDataSourceException, ODataEdmException {
         JPAODataEntityGeneratorImpl generator = new JPAODataEntityGeneratorImpl();
         generator.setOdataNamespace("Sdl.ContentDelivery");
 
-        List<Class<?>> odataClasses = generator.generateODataEntityClasses(ENTITY_CLASSES);
+        List<Class<?>> odataClasses = generator.generateODataEntityClasses(ENTITIES);
 
         AnnotationEntityDataModelFactory factory = new AnnotationEntityDataModelFactory();
         odataClasses.forEach(factory::addClass);
 
         LOG.info("Building EntityDataModel");
-        EntityDataModel entityDataModel = factory.buildEntityDataModel();
+        factory.buildEntityDataModel();
     }
 }

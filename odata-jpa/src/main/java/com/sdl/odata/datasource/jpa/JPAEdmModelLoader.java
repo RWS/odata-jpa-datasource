@@ -32,11 +32,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author rdevries
+ * @author Renze de Vries
  */
 @Component
-public class JPAEdmConfiguration {
-    private static final Logger LOG = LoggerFactory.getLogger(JPAEdmConfiguration.class);
+public class JPAEdmModelLoader {
+    private static final Logger LOG = LoggerFactory.getLogger(JPAEdmModelLoader.class);
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
@@ -49,14 +49,14 @@ public class JPAEdmConfiguration {
 
     @PostConstruct
     public void init() throws ODataDataSourceException {
-        LOG.info("Initiating tridion entity loader");
+        LOG.info("Initiating JPA entity loader");
 
         List<Class<?>> jpaEntities = discoverEntities();
 
         List<Class<?>> entityClasses = entityGenerator.generateODataEntityClasses(jpaEntities);
         edmRegistry.registerClasses(entityClasses);
 
-        LOG.info("Finished initiating tridion entities");
+        LOG.info("Finished initiating JPA entities");
     }
 
     private List<Class<?>> discoverEntities() {

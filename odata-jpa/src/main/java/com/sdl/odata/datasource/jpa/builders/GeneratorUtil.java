@@ -16,11 +16,15 @@
 package com.sdl.odata.datasource.jpa.builders;
 
 /**
- * @author renzedevries
+ * @author Renze de Vries
  */
-public class GeneratorUtil {
+public final class GeneratorUtil {
+    private GeneratorUtil() {
+
+    }
+
     public static String getODataTypeName(String jpaPackage, Class<?> jpaType, String odataNamespace) {
-        if(jpaType.getName().startsWith(jpaPackage)) {
+        if (jpaType.getName().startsWith(jpaPackage)) {
             return String.format("%s.%s", odataNamespace, jpaType.getSimpleName());
         } else {
             return jpaType.getName();

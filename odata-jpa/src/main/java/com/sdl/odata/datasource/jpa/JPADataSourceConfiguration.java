@@ -31,7 +31,8 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import javax.sql.DataSource;
 
 /**
- * @author renzedevries
+ * The JPA Datasource configuration.
+ * @author Renze de Vries
  */
 @Configuration
 @ComponentScan
@@ -61,7 +62,7 @@ public class JPADataSourceConfiguration {
 
     @Bean
     @Primary
-    @ConfigurationProperties(prefix="datasource.primary")
+    @ConfigurationProperties(prefix = "datasource.primary")
     public DataSource primaryDataSource() {
         LOG.info("Logging in with user {} and url {}", username, url);
         return DataSourceBuilder.create()

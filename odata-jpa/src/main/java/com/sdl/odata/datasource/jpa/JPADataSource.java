@@ -34,7 +34,9 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 
 /**
- * @author renzedevries
+ * The default JPA datasource, this datasource by default will create a transaction per operation.
+ *
+ * @author Renze de Vries
  */
 @Component
 @Primary
@@ -45,7 +47,7 @@ public class JPADataSource implements DataSource {
     private EntityMapper<Object, Object> entityMapper;
 
     @Autowired
-    protected EntityManagerFactory entityManagerFactory;
+    private EntityManagerFactory entityManagerFactory;
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -63,7 +65,7 @@ public class JPADataSource implements DataSource {
 
             return entityMapper.convertDSEntityToOData(jpaEntity, entity.getClass(), entityDataModel);
         } finally {
-            if(transaction.isActive()) {
+            if (transaction.isActive()) {
                 transaction.commit();
             } else {
                 transaction.rollback();
@@ -89,6 +91,10 @@ public class JPADataSource implements DataSource {
     @Override
     public void deleteLink(ODataUri uri, ODataLink link, EntityDataModel entityDataModel) throws ODataException {
 
+    }
+
+    protected EntityManagerFactory getEntityManagerFactory() {
+        return entityManagerFactory;
     }
 
     @Override

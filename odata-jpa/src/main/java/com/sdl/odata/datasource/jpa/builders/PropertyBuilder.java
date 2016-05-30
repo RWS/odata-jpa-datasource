@@ -46,7 +46,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
- * @author renzedevries
+ * @author Renze de Vries
  */
 public class PropertyBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(PropertyBuilder.class);
@@ -69,11 +69,11 @@ public class PropertyBuilder {
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(jpaType);
             for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
-                LOG.info("Processing property: {}", propertyDescriptor.getName());
+                LOG.debug("Processing property: {}", propertyDescriptor.getName());
 
                 MethodInfo methodInfo = new MethodInfo(propertyDescriptor.getReadMethod());
                 if (methodInfo.isValid()) {
-                    if(methodInfo.isPrimitiveType()) {
+                    if (methodInfo.isPrimitiveType()) {
                         generateField(methodInfo.getReturnType(), propertyDescriptor.getName());
                     } else {
                         generateComplexRelation(propertyDescriptor, methodInfo);
@@ -81,14 +81,15 @@ public class PropertyBuilder {
                 }
 
             }
-        } catch(IntrospectionException e) {
+        } catch (IntrospectionException e) {
             throw new JPADataMappingException("Unable to map properties for entity: " + jpaType.getName(), e);
         }
     }
 
-    private void generateComplexRelation(PropertyDescriptor propertyDescriptor, MethodInfo readMethodInfo) throws JPADataMappingException {
+    private void generateComplexRelation(PropertyDescriptor propertyDescriptor, MethodInfo readMethodInfo)
+            throws JPADataMappingException {
         Class<?> propertyType = propertyDescriptor.getPropertyType();
-        if(pool.getOrNull(propertyType.getName()) == null) {
+        if (pool.getOrNull(propertyType.getName()) == null) {
             pool.makeClass(readMethodInfo.getReturnType().getName());
         }
 
@@ -99,33 +100,39 @@ public class PropertyBuilder {
                 Method readMethod = propertyDescriptor.getReadMethod();
                 Type genericReturnType = readMethod.getGenericReturnType();
                 Class<?> genericType = getCollectionElementType(genericReturnType);
-                String odataTypeName = GeneratorUtil.getODataTypeName(genericType.getPackage().getName(), genericType, context.getOdataNamespace());
+                String odataTypeName = GeneratorUtil.getODataTypeName(genericType.getPackage().getName(),
+                        genericType, context.getOdataNamespace());
 
-                LOG.debug("Generating collection of complex entities: {}", propertyDescriptor.getPropertyType().getName());
-                CtField field = generateField(fieldType, propertyName, () -> generateNavigationAnnotation(propertyName));
-                String listSig = new SignatureAttribute.ClassType(propertyType.getName(), new SignatureAttribute.TypeArgument[] {
+                LOG.debug("Generating collection of complex types: {}", propertyDescriptor.getPropertyType().getName());
+                CtField field = generateField(fieldType, propertyName,
+                        () -> generateNavigationAnnotation(propertyName));
+                String listSig = new SignatureAttribute.ClassType(propertyType.getName(),
+                        new SignatureAttribute.TypeArgument[] {
                         new SignatureAttribute.TypeArgument(new SignatureAttribute.ClassType(odataTypeName))
                 }).encode();
                 field.setGenericSignature(listSig);
-            } else if(context.containsJpaType(propertyType)) {
+            } else if (context.containsJpaType(propertyType)) {
                 String odataTypeName = GeneratorUtil.getODataTypeName(propertyType.getPackage().getName(),
                         propertyType, context.getOdataNamespace());
-                if(pool.getOrNull(odataTypeName) == null) {
+                if (pool.getOrNull(odataTypeName) == null) {
                     pool.makeClass(odataTypeName);
                 }
                 CtClass generatedClass = pool.get(odataTypeName);
 
                 LOG.debug("Generating field of type: {}", odataTypeName);
-                generateField(generatedClass, propertyDescriptor.getName(), () -> generateNavigationAnnotation(propertyDescriptor.getName()));
+                generateField(generatedClass, propertyDescriptor.getName(),
+                        () -> generateNavigationAnnotation(propertyDescriptor.getName()));
             } else {
                 throw new JPADataMappingException("Found a complex relation type of an unmapped JPA type");
             }
-        } catch(NotFoundException e) {
-            throw new JPADataMappingException("Unable to find property return type for property: " + propertyDescriptor.getName(), e);
+        } catch (NotFoundException e) {
+            throw new JPADataMappingException("Unable to find property return type for property: " +
+                    propertyDescriptor.getName(), e);
         }
     }
 
-    private CtField generateField(CtClass fieldType, String propertyName, Supplier<AnnotationsAttribute> s) throws JPADataMappingException {
+    private CtField generateField(CtClass fieldType, String propertyName, Supplier<AnnotationsAttribute> s)
+            throws JPADataMappingException {
         try {
             CtField field = new CtField(fieldType, propertyName, generatedClass);
             AnnotationsAttribute annotationsAttribute = s.get();
@@ -135,7 +142,7 @@ public class PropertyBuilder {
             generatedClass.addField(field);
 
             return field;
-        } catch(CannotCompileException e) {
+        } catch (CannotCompileException e) {
             throw new JPADataMappingException("Unable to generate field: " + propertyName, e);
         }
     }
@@ -145,7 +152,7 @@ public class PropertyBuilder {
             CtClass fieldType = pool.get(propertyType.getName());
 
             generateField(fieldType, propertyName, () -> generateAnnotation(propertyName));
-        } catch(NotFoundException e) {
+        } catch (NotFoundException e) {
             throw new JPADataMappingException("Unable to generate field: " + propertyName, e);
         }
     }
@@ -160,9 +167,7 @@ public class PropertyBuilder {
     }
 
     private Annotation generateJpaPropertyAnnotation() {
-        Annotation annotation = new AnnotationBuilder(constPool, ODataJPAProperty.class).build();
-
-        return annotation;
+        return new AnnotationBuilder(constPool, ODataJPAProperty.class).build();
     }
 
     private AnnotationsAttribute generateAnnotation(String propertyName) throws JPADataMappingException {
@@ -187,8 +192,10 @@ public class PropertyBuilder {
                 + genericType);
     }
 
-
-    private class MethodInfo {
+    /**
+     * Method information about the jpa property.
+     */
+    private final class MethodInfo {
         private Method method;
 
         private boolean column = false;
@@ -200,7 +207,7 @@ public class PropertyBuilder {
         private MethodInfo(Method method) {
             this.method = method;
 
-            if(method != null) {
+            if (method != null) {
                 column = method.getAnnotation(Column.class) != null;
                 oneToMany = method.getAnnotation(OneToMany.class) != null;
                 manyToOne = method.getAnnotation(ManyToOne.class) != null;

@@ -45,7 +45,9 @@ import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.writeField;
 
 /**
  * Implementation of {@link EntityMapper} that converts between OData entities
- * and JPA entities using the annotations defined in the package {@code com.tridion.odata.api.datasource.annotations}.
+ * and entities having the JPA annotations.
+ *
+ * @author Renze de Vries
  */
 @Component
 @Qualifier("JPA")

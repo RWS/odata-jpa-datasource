@@ -27,7 +27,7 @@ import static com.sdl.odata.util.AnnotationsUtil.getAnnotation;
 
 
 /**
- * Simple abstract property visitor that reads the JPA metadata
+ * Simple abstract property visitor that reads the JPA metadata.
  */
 public abstract class JPAPropertyVisitor implements PropertyVisitor<ODataDataSourceException> {
     @Override

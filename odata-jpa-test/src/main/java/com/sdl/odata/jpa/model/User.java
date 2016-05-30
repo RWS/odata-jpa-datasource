@@ -21,6 +21,10 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import java.util.List;
 
+/**
+ * Users entity.
+ * @author Renze de Vries
+ */
 @Entity(name = "USERS")
 public class User {
     private String userId;

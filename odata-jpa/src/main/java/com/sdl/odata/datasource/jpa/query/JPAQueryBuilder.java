@@ -18,7 +18,11 @@ package com.sdl.odata.datasource.jpa.query;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * JPA query builder.
