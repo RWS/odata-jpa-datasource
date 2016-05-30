@@ -36,7 +36,6 @@ public class JpaPostProcessor implements PersistenceUnitPostProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(JpaPostProcessor.class);
 
-//    private static final List<String> ENTITY_PACKAGES = newArrayList("com.tridion.odata.datalayer", "com.tridion.storage");
     private ClassPathScanningCandidateComponentProvider provider;
 
     @Value("${datasource.entitymodel}")

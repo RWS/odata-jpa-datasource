@@ -1,5 +1,5 @@
 { "@odata.context" : "http://localhost:8080/jpa.svc/$metadata#/Users/$entity",
-  "@odata.id" : "/Users('Donal')",
+  "@odata.id" : "/Users('Donald')",
   "userId" : "Donald",
   "name" : "Donald",
   "email" : "Duck",

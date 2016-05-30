@@ -28,7 +28,6 @@ import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
-import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
 /**
@@ -59,11 +58,6 @@ public class JPADataSourceConfiguration {
 
     @Value("${datasource.generateDDL:true}")
     private boolean generateDDL;
-
-    @PostConstruct
-    public void postInit() {
-        LOG.info("INIT");
-    }
 
     @Bean
     @Primary

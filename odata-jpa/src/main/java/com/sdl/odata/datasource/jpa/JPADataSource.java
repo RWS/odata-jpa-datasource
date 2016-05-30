@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -36,6 +37,7 @@ import javax.persistence.EntityTransaction;
  * @author renzedevries
  */
 @Component
+@Primary
 public class JPADataSource implements DataSource {
     private static final Logger LOG = LoggerFactory.getLogger(JPADataSource.class);
 
