@@ -20,6 +20,7 @@ import com.sdl.odata.api.edm.model.EntityDataModel;
 import com.sdl.odata.api.mapper.EntityMapper;
 import com.sdl.odata.api.parser.ODataUri;
 import com.sdl.odata.api.processor.datasource.DataSource;
+import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import com.sdl.odata.api.processor.datasource.TransactionalDataSource;
 import com.sdl.odata.api.processor.link.ODataLink;
 import org.slf4j.Logger;
@@ -28,10 +29,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import scala.Option;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
+import javax.persistence.PersistenceException;
+
+import static com.sdl.odata.api.parser.ODataUriUtil.extractEntityWithKeys;
 
 /**
  * The default JPA datasource, this datasource by default will create a transaction per operation.
@@ -80,7 +85,32 @@ public class JPADataSource implements DataSource {
 
     @Override
     public void delete(ODataUri uri, EntityDataModel entityDataModel) throws ODataException {
+        Option<Object> entity = extractEntityWithKeys(uri, entityDataModel);
 
+        if (entity.isDefined()) {
+            Object jpaEntity = entityMapper.convertODataEntityToDS(entity.get(), entityDataModel);
+            if (jpaEntity != null) {
+                EntityManager entityManager = getEntityManager();
+                EntityTransaction transaction = entityManager.getTransaction();
+                try {
+                    transaction.begin();
+
+                    Object attached = entityManager.merge(jpaEntity);
+                    entityManager.remove(attached);
+                } catch (PersistenceException e) {
+                    LOG.error("Could not remove entity: {}", entity);
+                    throw new ODataDataSourceException("Could not remove entity", e);
+                } finally {
+                    if (transaction.isActive()) {
+                        transaction.commit();
+                    } else {
+                        transaction.rollback();
+                    }
+                }
+            } else {
+                throw new ODataDataSourceException("Could not remove entity, could not be loaded");
+            }
+        }
     }
 
     @Override

@@ -29,6 +29,8 @@ In order to start the application you can use the following command:
 mvn -f odata-jpa-test/pom.xml spring-boot:run
 ```
 
+The example contains two entities namely 'User' and 'PhotoItem', these are available in the package 'com.sdl.odata.jpa.model'. These will result in an OData Collection named 'Users' and 'PhotoItems'.
+
 ### Inserting data
 Let's insert some test data that can be used in example demo:
 ```
@@ -39,4 +41,9 @@ curl -i -X POST -d @odata-jpa-test/src/test/resources/user-sample.json http://lo
 You can query the database with a Query like this for example:
 ```
 http://localhost:8080/jpa.svc/Users?$filter=name eq 'Donald'
+```
+### Deleting data
+To remove the entity you can use the following command:
+```
+curl -i -X DELETE http://localhost:8080/jpa.svc/Users\(\'Donald\'\) --header "Content-Type:application/json"
 ```
