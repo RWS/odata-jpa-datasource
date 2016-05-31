@@ -1,5 +1,5 @@
 # OData JPA Extension
-This project contains a JPA Datasource and Query extension for the SDL OData framework. With this extension you can take you existing JPA entity model and expose it in the OData framework.
+This project contains a JPA Datasource and Query extension for the SDL OData framework. With this extension you can take you existing JPA entity model and expose it in the OData framework (https://github.com/sdl/odata).
 
 For the moment the extension is powered by JPA annotated entity model and the persistence engine is backed by Hibernate. In the future we might abstract away the persistence engine to be replaceable by something else.
 
