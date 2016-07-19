@@ -80,7 +80,7 @@
 
         <java.version>1.8</java.version>
 
-        <odata.version>2.1.0-SNAPSHOT</odata.version>
+        <odata.version>2.1.1</odata.version>
     </properties>
 
     <!-- Dependency management -->

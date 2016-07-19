@@ -147,12 +147,20 @@ public class JPADatasourceProvider implements DataSourceProvider {
             }
 
             for (Map.Entry<String, Object> entry : queryParams.entrySet()) {
-                query.setParameter(entry.getKey(), entry.getValue());
+                query.setParameter(entry.getKey(), tryConvert(entry.getValue()));
             }
 
             return query.getResultList();
         } finally {
             em.close();
         }
+    }
+
+    private Object tryConvert(Object parameterType) {
+        if (parameterType instanceof scala.math.BigDecimal) {
+            return ((scala.math.BigDecimal) parameterType).intValue();
+        }
+
+        return parameterType;
     }
 }
