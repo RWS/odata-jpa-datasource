@@ -15,6 +15,18 @@
  */
 package com.sdl.odata.datasource.jpa;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Parameter;
+import javax.persistence.Query;
+import javax.persistence.metamodel.EntityType;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sdl.odata.api.ODataException;
 import com.sdl.odata.api.edm.model.EntityDataModel;
 import com.sdl.odata.api.mapper.EntityMapper;
@@ -30,16 +42,9 @@ import com.sdl.odata.datasource.jpa.query.JPAQueryStrategyBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
-
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Query;
-import javax.persistence.metamodel.EntityType;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.springframework.util.NumberUtils;
 
 import static com.sdl.odata.api.processor.query.QueryResult.from;
 
@@ -54,6 +59,9 @@ public class JPADatasourceProvider implements DataSourceProvider {
     private EntityManagerFactory entityManagerFactory;
 
     @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
     private JPADataSource jpaDataSource;
 
     @Autowired
@@ -61,6 +69,9 @@ public class JPADatasourceProvider implements DataSourceProvider {
 
     @Autowired
     private ODataProxyProcessor proxyProcessor;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /**
      * Check if the given JPA entity class is a valid entity type.
@@ -102,19 +113,22 @@ public class JPADatasourceProvider implements DataSourceProvider {
     public QueryOperationStrategy getStrategy(ODataRequestContext requestContext, QueryOperation operation,
                                               TargetType expectedODataEntityType) throws ODataException {
         EntityDataModel entityDataModel = requestContext.getEntityDataModel();
+
         final JPAQuery query = new JPAQueryStrategyBuilder(entityDataModel).build(operation);
         LOG.debug("JPA Query: {}", query);
 
         return () -> {
 
-            List<Object> result = executeQueryListResult(query);
-            LOG.info("Found: {} items for query: {}", result.size(), query);
-
-            return from(convert(entityDataModel, expectedODataEntityType.typeName(), result));
+                Pair<String[], List<Object>> resultWithColumns = executeQueryListResult(query);
+                List<Object> result = resultWithColumns.getSecond();
+                LOG.info("Found: {} items for query: {}", result.size(), query);
+                return from(convert(entityDataModel, expectedODataEntityType.typeName(),
+                                    result, query.getExpandFields()));
         };
     }
 
-    private List<?> convert(EntityDataModel entityDataModel, String expectedType, List<?> jpaEntities) {
+    public List<?> convert(EntityDataModel entityDataModel, String expectedType,
+                           List<?> jpaEntities, List<String> expandProperties) {
         Class<?> javaType = entityDataModel.getType(expectedType).getJavaType();
 
         return jpaEntities.stream().map(j -> {
@@ -128,7 +142,7 @@ public class JPADatasourceProvider implements DataSourceProvider {
         }).collect(Collectors.toList());
     }
 
-    private <T> List<T> executeQueryListResult(JPAQuery jpaQuery) {
+    public <T> Pair<String[], List<T>> executeQueryListResult(JPAQuery jpaQuery) {
         EntityManager em = entityManagerFactory.createEntityManager();
 
         String queryString = jpaQuery.getQueryString();
@@ -136,6 +150,7 @@ public class JPADatasourceProvider implements DataSourceProvider {
         int nrOfResults = jpaQuery.getLimitCount();
         int startPosition = jpaQuery.getSkipCount();
         Map<String, Object> queryParams = jpaQuery.getQueryParams();
+        String[] columns = jpaQuery.getColumns().toArray(new String[0]);
 
         try {
             if (nrOfResults > 0) {
@@ -147,20 +162,31 @@ public class JPADatasourceProvider implements DataSourceProvider {
             }
 
             for (Map.Entry<String, Object> entry : queryParams.entrySet()) {
-                query.setParameter(entry.getKey(), tryConvert(entry.getValue()));
+                query.setParameter(entry.getKey(), tryConvert(query.getParameter(entry.getKey()), entry.getValue()));
             }
 
-            return query.getResultList();
+            return Pair.of(columns, query.getResultList());
         } finally {
             em.close();
         }
     }
 
-    private Object tryConvert(Object parameterType) {
-        if (parameterType instanceof scala.math.BigDecimal) {
-            return ((scala.math.BigDecimal) parameterType).intValue();
+    public Object tryConvert(Parameter<?> parameterMetadata, Object paramValue) {
+        Class<?> expectedType = parameterMetadata.getParameterType();
+        if (paramValue instanceof String && Number.class.isAssignableFrom(expectedType)) {
+            return NumberUtils.parseNumber(paramValue.toString(), (Class<? extends Number>) expectedType);
+        } else if (paramValue instanceof Number && Number.class.isAssignableFrom(expectedType)) {
+            return NumberUtils.convertNumberToTargetClass((Number) paramValue, (Class<? extends Number>) expectedType);
+        } else if (expectedType.isAssignableFrom(Boolean.class) || expectedType.isAssignableFrom(boolean.class)) {
+            if (paramValue instanceof String) {
+                return Boolean.valueOf((String) paramValue);
+            }
+        } else if (expectedType.isAssignableFrom(String.class) && paramValue != null) {
+            return paramValue.toString();
+        } else if (expectedType.isAssignableFrom(UUID.class) && paramValue != null) {
+            return UUID.fromString(paramValue.toString());
         }
 
-        return parameterType;
+        return paramValue;
     }
 }

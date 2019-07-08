@@ -15,6 +15,7 @@
  */
 package com.sdl.odata.datasource.jpa.query;
 
+import com.google.common.base.Joiner;
 import com.sdl.odata.api.ODataException;
 import com.sdl.odata.api.ODataNotImplementedException;
 import com.sdl.odata.api.edm.model.EntityType;
@@ -29,6 +30,7 @@ import com.sdl.odata.api.processor.query.PropertyCriteriaValue;
 import com.sdl.odata.datasource.jpa.util.JPAMetadataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 
 /**
@@ -64,7 +66,12 @@ public class JPAWhereStrategyBuilder {
         LOG.debug("where clause is going to build for {}", criteria);
         StringBuilder builder = new StringBuilder();
         buildFromCriteria(criteria, builder);
-        jpaQueryBuilder.setWhereClause(builder.toString());
+        if (StringUtils.isEmpty(jpaQueryBuilder.getWhereClause())) {
+            jpaQueryBuilder.setWhereClause(builder.toString());
+        } else {
+            jpaQueryBuilder.setWhereClause(Joiner.on(" AND ")
+              .join(jpaQueryBuilder.getWhereClause(), builder.toString()));
+        }
         LOG.debug("where clause built for {}", criteria);
     }
 

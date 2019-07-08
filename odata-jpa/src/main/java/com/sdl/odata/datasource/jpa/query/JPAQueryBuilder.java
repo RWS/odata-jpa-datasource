@@ -15,13 +15,15 @@
  */
 package com.sdl.odata.datasource.jpa.query;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+
 
 
 /**
@@ -176,6 +178,7 @@ public final class JPAQueryBuilder {
     }
 
     public JPAQuery build() {
+        List<String> columns = Collections.emptyList();
         StringBuilder queryStringBuilder = new StringBuilder();
 
         // SELECT [DISTINCT]
@@ -184,11 +187,11 @@ public final class JPAQueryBuilder {
             queryStringBuilder.append("DISTINCT ");
         }
 
-        if (!selectList.isEmpty()) {
-            Joiner.on(',').appendTo(queryStringBuilder, selectList);
-        } else {
-            queryStringBuilder.append(fromAlias);
-        }
+        queryStringBuilder.append(fromAlias);
+//        if (!selectList.isEmpty()) {
+//            Joiner.on(',').appendTo(queryStringBuilder, selectList);
+//            columns = selectList.stream().map(c -> StringUtils.substringAfter(c, ".")).collect(Collectors.toList());
+//        }
 
         // FROM <fromCollection> <fromAlias>
         queryStringBuilder.append(" FROM ").append(fromCollection).append(' ').append(fromAlias);
@@ -220,6 +223,6 @@ public final class JPAQueryBuilder {
             Joiner.on(',').appendTo(queryStringBuilder, orderByFields);
         }
 
-        return new JPAQuery(queryStringBuilder.toString(), params, limitCount, skipCount);
+        return new JPAQuery(queryStringBuilder.toString(), params, columns, expandFields, limitCount, skipCount);
     }
 }

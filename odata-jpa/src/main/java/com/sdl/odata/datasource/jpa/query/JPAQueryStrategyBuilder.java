@@ -15,6 +15,13 @@
  */
 package com.sdl.odata.datasource.jpa.query;
 
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.sdl.odata.api.ODataException;
@@ -36,12 +43,7 @@ import com.sdl.odata.api.processor.query.SelectByKeyOperation;
 import com.sdl.odata.api.processor.query.SelectOperation;
 import com.sdl.odata.api.processor.query.SelectPropertiesOperation;
 import com.sdl.odata.api.processor.query.SkipOperation;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.springframework.util.StringUtils;
 
 import static com.sdl.odata.datasource.jpa.util.JPAMetadataUtil.getJPACollectionName;
 import static com.sdl.odata.datasource.jpa.util.JPAMetadataUtil.getJPAPropertyName;
@@ -60,6 +62,7 @@ public final class JPAQueryStrategyBuilder {
     public JPAQueryStrategyBuilder(EntityDataModel entityDataModel) {
         this.entityDataModel = entityDataModel;
     }
+
 
     public JPAQuery build(QueryOperation operation) throws ODataException {
         return  buildFromOperation(operation).build();
@@ -173,6 +176,9 @@ public final class JPAQueryStrategyBuilder {
             whereClauseElements.add(alias + "." + entry.getKey() + " = :" + paramName);
             params.put(paramName, entry.getValue());
         }
+        if (!StringUtils.isEmpty(builder.getWhereClause())) {
+            whereClauseElements.add(builder.getWhereClause());
+        }
 
         return builder.setWhereClause(Joiner.on(" AND ").join(whereClauseElements)).addParams(params);
     }
@@ -203,6 +209,7 @@ public final class JPAQueryStrategyBuilder {
         EntityType entityType = getUnderlyingEntityType(operation);
 
         for (String expandProperty : operation.getExpandPropertiesAsJava()) {
+            builder.addToSelectList(alias + "." + getJPAPropertyName(entityType, expandProperty));
             addExpandProperty(builder, expandProperty, alias, entityType);
         }
 

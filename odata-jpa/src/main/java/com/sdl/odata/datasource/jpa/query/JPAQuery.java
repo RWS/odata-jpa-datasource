@@ -15,6 +15,8 @@
  */
 package com.sdl.odata.datasource.jpa.query;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,18 +28,29 @@ public final class JPAQuery {
     private final String queryString;
     private final Map<String, Object> queryParams;
 
+    private final List<String> columns;
+    private final List<String> expandFields;
+
     private final int limitCount;
     private final int skipCount;
 
-    public JPAQuery(String queryString, Map<String, Object> queryParams, int limitCount, int skipCount) {
-        this.queryString = queryString;
-        this.queryParams = queryParams;
-        this.limitCount = limitCount;
-        this.skipCount = skipCount;
-    }
 
     public JPAQuery(String queryString, Map<String, Object> queryParams) {
-        this(queryString, queryParams, -1, -1);
+        this(queryString, queryParams,  -1, -1);
+    }
+
+    public JPAQuery(String queryString, Map<String, Object> queryParams, int limitCount, int skipCount) {
+        this(queryString, queryParams, Collections.emptyList(),  Collections.emptyList(), limitCount, skipCount);
+    }
+
+    public JPAQuery(String queryString, Map<String, Object> queryParams, List<String> columns,
+                    List<String> expandFields, int limitCount, int skipCount) {
+        this.queryString = queryString;
+        this.queryParams = queryParams;
+        this.columns = columns;
+        this.expandFields = expandFields;
+        this.limitCount = limitCount;
+        this.skipCount = skipCount;
     }
 
     public String getQueryString() {
@@ -59,5 +72,13 @@ public final class JPAQuery {
     @Override
     public String toString() {
         return queryString + ", params=" + queryParams;
+    }
+
+    public List<String> getColumns() {
+        return columns;
+    }
+
+    public List<String> getExpandFields() {
+        return expandFields;
     }
 }
