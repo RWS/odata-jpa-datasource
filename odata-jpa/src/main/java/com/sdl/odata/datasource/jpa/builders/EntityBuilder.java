@@ -15,12 +15,21 @@
  */
 package com.sdl.odata.datasource.jpa.builders;
 
+import java.util.ArrayList;
+import java.util.List;
+import javax.persistence.EntityManager;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.SingularAttribute;
+
 import com.sdl.odata.api.edm.annotations.EdmEntity;
 import com.sdl.odata.api.edm.annotations.EdmEntitySet;
+import com.sdl.odata.api.edm.annotations.EdmPropertyRef;
 import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import com.sdl.odata.datasource.jpa.ODataJPAEntity;
 import com.sdl.odata.datasource.jpa.exceptions.JPADataMappingException;
+import com.sdl.odata.datasource.jpa.model.MapBackedEntity;
 import javassist.CannotCompileException;
+import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
@@ -30,15 +39,6 @@ import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.persistence.Id;
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.sdl.odata.datasource.jpa.builders.GeneratorUtil.getODataTypeName;
 
@@ -55,11 +55,14 @@ public class EntityBuilder {
 
     private final String jpaPackage;
     private final TransformContext context;
+    private volatile EntityManager entityManager;
 
-    public EntityBuilder(Class<?> jpaType, TransformContext context) {
+    public EntityBuilder(Class<?> jpaType, TransformContext context, EntityManager entityManager) {
         this.jpaPackage = jpaType.getPackage().getName();
         this.jpaType = jpaType;
         this.context = context;
+        this.entityManager = entityManager;
+        pool.appendClassPath(new ClassClassPath(this.getClass()));
     }
 
     public Class<?> build() throws ODataDataSourceException {
@@ -74,7 +77,8 @@ public class EntityBuilder {
             ConstPool constPool = classFile.getConstPool();
 
             classFile.addAttribute(buildAnnotations(constPool));
-            new PropertyBuilder(context, jpaType, generatedClass).build();
+            classFile.setSuperclass(MapBackedEntity.class.getName());
+            new PropertyBuilder(context, jpaType, generatedClass, entityManager).build();
 
             Class<?> odataEntityClass = generatedClass.toClass();
             LOG.debug("Generated odata entity class: {}", odataEntityClass);
@@ -105,30 +109,27 @@ public class EntityBuilder {
         AnnotationBuilder entityAnnotationBuilder = new AnnotationBuilder(constPool, EdmEntity.class)
                 .addValue("name", jpaType.getSimpleName())
                 .addValue("namespace", context.getOdataNamespace());
-        readKeys(jpaType, entityAnnotationBuilder);
+        readKeys(jpaType, entityAnnotationBuilder, constPool);
 
         return entityAnnotationBuilder.build();
     }
 
-    private void readKeys(Class<?> jpaType, AnnotationBuilder entityAnnotationBuilder) throws JPADataMappingException {
-        try {
-            BeanInfo beanInfo = Introspector.getBeanInfo(jpaType);
+    private void readKeys(Class<?> jpaType, AnnotationBuilder entityAnnotationBuilder,
+                          ConstPool constPool) throws JPADataMappingException {
+            EntityType entityType = entityManager.getMetamodel().entity(jpaType);
 
             List<String> keys = new ArrayList<>();
-            for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
-                LOG.debug("Processing property: {}", propertyDescriptor.getName());
-
-                Method readMethod = propertyDescriptor.getReadMethod();
-                if (readMethod != null && readMethod.getAnnotation(Id.class) != null) {
-
-                    keys.add(propertyDescriptor.getName());
-                }
+            List<Annotation> keyRefs = new ArrayList<>();
+            SingularAttribute idAttribute = entityType.getId(entityType.getIdType().getJavaType());
+            if (idAttribute != null) {
+                keys.add(idAttribute.getName());
+                keyRefs.add(new AnnotationBuilder(constPool, EdmPropertyRef.class)
+                           .addValue("path", idAttribute.getName())
+                           .build());
             }
 
-            entityAnnotationBuilder.addValue("key", keys);
-        } catch (IntrospectionException e) {
-            throw new JPADataMappingException("Unable to read bean information");
-        }
+            entityAnnotationBuilder.addValue("key", keys.toArray(new String[0]));
+            entityAnnotationBuilder.addValue("keyRef", keyRefs.toArray(new Annotation[0]));
 
     }
 }

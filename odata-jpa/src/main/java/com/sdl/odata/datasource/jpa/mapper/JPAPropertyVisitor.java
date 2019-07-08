@@ -15,13 +15,14 @@
  */
 package com.sdl.odata.datasource.jpa.mapper;
 
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
+
 import com.google.common.base.Strings;
 import com.sdl.odata.api.edm.model.StructuralProperty;
 import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
-import com.sdl.odata.util.edm.PropertyVisitor;
 import com.sdl.odata.datasource.jpa.ODataJPAProperty;
-
-import java.lang.reflect.Field;
+import com.sdl.odata.util.edm.PropertyVisitor;
 
 import static com.sdl.odata.util.AnnotationsUtil.getAnnotation;
 
@@ -33,8 +34,10 @@ public abstract class JPAPropertyVisitor implements PropertyVisitor<ODataDataSou
     @Override
     public void visit(StructuralProperty property) throws ODataDataSourceException {
         Field field = property.getJavaField();
+        PropertyDescriptor propertyDescriptor = property.getPropertyDescriptor();
 
-        ODataJPAProperty jpaPropertyAnno = getAnnotation(field, ODataJPAProperty.class);
+        ODataJPAProperty jpaPropertyAnno =
+                getAnnotation(ODataJPAProperty.class, propertyDescriptor.getReadMethod(), field);
         String jpaFieldName = jpaPropertyAnno.value();
 
         if (Strings.isNullOrEmpty(jpaFieldName)) {

@@ -18,7 +18,7 @@ package com.sdl.odata.datasource.jpa;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -39,30 +39,30 @@ import javax.sql.DataSource;
 public class JPADataSourceConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(JPADataSourceConfiguration.class);
 
-    @Value("${datasource.driver}")
+    @Value("${spring.datasource.driver}")
     private String driver;
 
-    @Value("${datasource.username}")
+    @Value("${spring.datasource.username}")
     private String username;
 
-    @Value("${datasource.password}")
+    @Value("${spring.datasource.password}")
     private String password;
 
-    @Value("${datasource.url}")
+    @Value("${spring.datasource.url}")
     private String url;
 
-    @Value("${datasource.dialect}")
+    @Value("${spring.datasource.dialect}")
     private String dialect;
 
-    @Value("${datasource.entitymodel}")
+    @Value("${odata.entitymodel}")
     private String entityModel;
 
-    @Value("${datasource.generateDDL:true}")
+    @Value("${spring.datasource.generateDDL:true}")
     private boolean generateDDL;
 
     @Bean
     @Primary
-    @ConfigurationProperties(prefix = "datasource.primary")
+    @ConfigurationProperties(prefix = "spring.datasource.primary")
     public DataSource primaryDataSource() {
         LOG.info("Logging in with user {} and url {}", username, url);
         return DataSourceBuilder.create()

@@ -18,13 +18,16 @@ package com.sdl.odata.datasource.jpa;
 import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
 import com.sdl.odata.datasource.jpa.builders.EntityBuilder;
 import com.sdl.odata.datasource.jpa.builders.TransformContext;
+import org.hibernate.annotations.Immutable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.EntityManager;
 
 /**
  * @author Renze de Vries
@@ -33,8 +36,15 @@ import java.util.List;
 public class JPAODataEntityGeneratorImpl implements JPAODataEntityGenerator {
     private static final Logger LOG = LoggerFactory.getLogger(JPAODataEntityGeneratorImpl.class);
 
-    @Value("${datasource.odatanamespace}")
+    @Value("${odata.odatanamespace}")
     private String odataNamespace;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public List<Class<?>> generateODataEntityClasses(List<Class<?>> jpaEntities) throws ODataDataSourceException {
@@ -42,8 +52,14 @@ public class JPAODataEntityGeneratorImpl implements JPAODataEntityGenerator {
         List<Class<?>> odataEntities = new ArrayList<>();
         TransformContext context = new TransformContext(jpaEntities, odataNamespace);
         for (Class<?> jpaEntity : jpaEntities) {
+            Immutable immutableAnno = jpaEntity.getAnnotation(Immutable.class);
+            if (immutableAnno != null) {
+                LOG.info("Skipping OData entity for JPA Entity (immutable)", jpaEntity.getName());
+                continue;
+            }
+
             LOG.info("Generating OData entity for JPA Entity: {}", jpaEntity.getName());
-            Class<?> odataEntity = new EntityBuilder(jpaEntity, context).build();
+            Class<?> odataEntity = new EntityBuilder(jpaEntity, context, entityManager).build();
 
             LOG.info("Generated an odata entity: {}", odataEntity.getName());
             odataEntities.add(odataEntity);

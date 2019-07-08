@@ -15,19 +15,27 @@
  */
 package com.sdl.odata.datasource.jpa.builders;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.sdl.odata.datasource.jpa.exceptions.JPADataMappingException;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
+import javassist.bytecode.annotation.AnnotationMemberValue;
 import javassist.bytecode.annotation.ArrayMemberValue;
+import javassist.bytecode.annotation.BooleanMemberValue;
+import javassist.bytecode.annotation.DoubleMemberValue;
+import javassist.bytecode.annotation.IntegerMemberValue;
+import javassist.bytecode.annotation.LongMemberValue;
 import javassist.bytecode.annotation.MemberValue;
+import javassist.bytecode.annotation.ShortMemberValue;
 import javassist.bytecode.annotation.StringMemberValue;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Renze de Vries
@@ -53,8 +61,26 @@ public class AnnotationBuilder {
         return this;
     }
 
-    public AnnotationBuilder addValue(String name, List<String> value) {
+    public AnnotationBuilder addValue(String name, Boolean value) {
         multimap.put(name, value);
+
+        return this;
+    }
+
+    public AnnotationBuilder addValue(String name, Number value) {
+        multimap.put(name, value);
+
+        return this;
+    }
+
+    public AnnotationBuilder addValue(String name, String[] values) {
+        multimap.put(name, Arrays.asList(values));
+
+        return this;
+    }
+
+    public AnnotationBuilder addValue(String name, Annotation[] values) {
+        multimap.put(name, Arrays.asList(values));
 
         return this;
     }
@@ -93,8 +119,20 @@ public class AnnotationBuilder {
     private MemberValue generateMemberValue(Object value) throws JPADataMappingException {
         if (value instanceof String) {
             return new StringMemberValue(value.toString(), constPool);
+        } else if (value instanceof Boolean) {
+            return new BooleanMemberValue((Boolean) value, constPool);
+        } else if (value instanceof Integer) {
+            return new IntegerMemberValue((Integer) value, constPool);
+        } else if (value instanceof Long) {
+            return new LongMemberValue((Long) value, constPool);
+        } else if (value instanceof Short) {
+            return new ShortMemberValue((Short) value, constPool);
+        } else if (value instanceof Double) {
+            return new DoubleMemberValue((Double) value, constPool);
         } else if (value instanceof List) {
             return generateArrayValues((List) value);
+        } else if (value instanceof Annotation) {
+            return new AnnotationMemberValue((Annotation) value, constPool);
         }
 
         throw new JPADataMappingException("Unable to map annotation value, unsupported type");

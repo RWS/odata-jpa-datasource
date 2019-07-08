@@ -15,18 +15,24 @@
  */
 package com.sdl.odata.datasource.jpa;
 
-import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
-import org.hibernate.collection.spi.PersistentCollection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import javax.persistence.Entity;
-import java.lang.reflect.Field;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.persistence.Entity;
+import javax.persistence.EntityManager;
+import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.EntityType;
+
+import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
+import com.sdl.odata.datasource.jpa.mapper.AnnotationJPAEntityMapper;
+import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.proxy.HibernateProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * The OData Proxy Interceptor
@@ -39,7 +45,10 @@ import java.util.Set;
 @Component
 public class ODataProxyProcessor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ODataProxyProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+    @Autowired
+    private EntityManager entityManager;
 
     /**
      * If the lazy initialization exists, we are able to receive the values with Hibernate proxies objects.
@@ -51,7 +60,12 @@ public class ODataProxyProcessor {
      */
     public Object process(Object source)
             throws ODataDataSourceException {
-        unproxyElements(source, new HashSet<>(), null);
+        return process(source, null);
+    }
+
+    public Object process(Object source, List<String> expandProperties)
+            throws ODataDataSourceException {
+        unproxyElements(source, new HashSet<>(), expandProperties);
         return source;
     }
 
@@ -63,38 +77,45 @@ public class ODataProxyProcessor {
         //put entity to set of already visited
         visitedEntities.add(entity);
         Class reflectObj = entity.getClass();
-        Field[] fields = reflectObj.getDeclaredFields();
+        EntityType entityType = entityManager.getMetamodel().entity(entity.getClass());
         boolean sourceEntity = visitedEntities.size() == 1;
 
-        for (Field field : fields) {
-            field.setAccessible(true);
+        for (Attribute attr : (Set<Attribute>) entityType.getAttributes()) {
             try {
-                Object fieldType = field.get(entity);
-                if (isJPAEntity(fieldType)) {
-                    unproxyElements(fieldType, visitedEntities, expandProperties);
-                } else if (fieldType instanceof PersistentCollection) {
-                    PersistentCollection collection = (PersistentCollection) fieldType;
+                Object attrValue = AnnotationJPAEntityMapper.getPropertyValue(attr, entity);
+                if (HibernateProxy.class.isInstance(attrValue) && !(attrValue instanceof PersistentCollection)) {
+                    HibernateProxy proxy = (HibernateProxy) attrValue;
+                    if (proxy.getHibernateLazyInitializer().isUninitialized()) {
+                        AnnotationJPAEntityMapper.setPropertyValue(attr, entity, null);
+                    } else {
+                        proxy.getHibernateLazyInitializer().initialize();
+                        AnnotationJPAEntityMapper.setPropertyValue(attr, entity, proxy.writeReplace());
+                    }
+                } else if (isJPAEntity(attrValue)) {
+                    unproxyElements(attrValue, visitedEntities, expandProperties);
+                } else if (attrValue instanceof PersistentCollection) {
+                    PersistentCollection collection = (PersistentCollection) attrValue;
                     if (collection.wasInitialized()) {
                         for (Object element : (Iterable<?>) collection) {
                             unproxyElements(element, visitedEntities, expandProperties);
                         }
                     } else {
                         if (!sourceEntity && !isEntityExpanded(entity, expandProperties)) {
-                            if (fieldType instanceof List) {
+                            if (attrValue instanceof List) {
                                 // Hibernate checks if the current field type is a hibernate proxy
                                 LOG.debug("This collection is lazy initialized. Replaced by an empty list.");
-                                field.set(entity, new ArrayList<>());
-                            } else if (fieldType instanceof Set) {
+                                AnnotationJPAEntityMapper.setPropertyValue(attr, entity, new ArrayList<>());
+                            } else if (attrValue instanceof Set) {
                                 LOG.debug("This set is lazy initialized. Replaced by an empty set.");
-                                field.set(entity, new HashSet<>());
+                                AnnotationJPAEntityMapper.setPropertyValue(attr, entity, new HashSet<>());
                             }
                         } else {
                             // These properties will be loaded during mapping
-                            field.set(entity, null);
+                            AnnotationJPAEntityMapper.setPropertyValue(attr, entity, null);
                         }
                     }
                 }
-            } catch (IllegalAccessException e) {
+            } catch (Exception e) {
                 throw new ODataDataSourceException("Cannot un-proxy elements of: " + reflectObj.getName(), e);
             }
         }

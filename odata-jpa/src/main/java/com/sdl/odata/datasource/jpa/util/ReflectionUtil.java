@@ -15,9 +15,12 @@
  */
 package com.sdl.odata.datasource.jpa.util;
 
-import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
-
 import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+
+import com.sdl.odata.api.processor.datasource.ODataDataSourceException;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * Small utility class that contains reflection shortcuts.
@@ -63,42 +66,48 @@ public final class ReflectionUtil {
      * @throws ODataDataSourceException If unable to load the Field
      */
     public static Field getField(Class<?> cls, String fieldName) throws ODataDataSourceException {
-        try {
-            return cls.getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
-            throw new ODataDataSourceException("Field " + fieldName + " does not exist in class: " + cls.getName(), e);
-        }
+            Field field = ReflectionUtils.findField(cls, fieldName);
+            if (field == null) {
+                throw new ODataDataSourceException("Field " + fieldName + " does not exist in class: " + cls.getName());
+            }
+            return field;
     }
 
-    /**
-     * Reads the field data by getting the object.
-     * @param field The field to get the field value for
-     * @param object The object instance that contains the field
-     * @return The raw object for the field
-     * @throws ODataDataSourceException If unable to read the field
-     */
-    public static Object readField(Field field, Object object) throws ODataDataSourceException {
-        field.setAccessible(true);
+    public static <T> T readMember(Member member, Object object) throws ODataDataSourceException {
         try {
-            return field.get(object);
-        } catch (IllegalAccessException e) {
-            throw new ODataDataSourceException("Cannot read field: " + field.getName(), e);
+            if (member instanceof Field) {
+                return (T) ReflectionUtils.getField((Field) member, object);
+            } else if (member instanceof Method) {
+                return (T) ReflectionUtils.invokeMethod((Method) member, object);
+            }
+        } catch (Exception e) {
+            throw new ODataDataSourceException(
+                    "Unable to get " + member + " from entity " +
+                    (object == null ? null : object.getClass()), e);
         }
+        throw new ODataDataSourceException(
+                "Unable to get " + member + " from entity " +
+                (object == null ? null : object.getClass()));
     }
 
-    /**
-     * Writes the object to the field.
-     * @param field The field to write the object to
-     * @param object The object instance on which the field is present
-     * @param value The value to write to the field
-     * @throws ODataDataSourceException If unable to write to the field
-     */
-    public static void writeField(Field field, Object object, Object value) throws ODataDataSourceException {
-        field.setAccessible(true);
+
+
+    public static <T> void writeMember(Member member, Object object, T value) throws ODataDataSourceException {
         try {
-            field.set(object, value);
-        } catch (IllegalAccessException e) {
-            throw new ODataDataSourceException("Cannot write field: " + field.getName(), e);
+            if (member instanceof Field) {
+                ReflectionUtils.setField((Field) member, object, value);
+                return;
+
+            } else if (member instanceof Method) {
+                ReflectionUtils.invokeMethod((Method) member, object, new Object[]{value});
+                return;
+            }
+        } catch (Exception e) {
+            throw new ODataDataSourceException("Unable to set " + member + " from entity " +
+                                               (object == null ? null : object.getClass()), e);
         }
+        throw new ODataDataSourceException("Unable to set " + member + " from entity " +
+                                           (object == null ? null : object.getClass()));
     }
+
 }

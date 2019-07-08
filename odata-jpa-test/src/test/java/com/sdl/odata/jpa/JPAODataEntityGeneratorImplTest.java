@@ -22,16 +22,28 @@ import com.sdl.odata.edm.factory.annotations.AnnotationEntityDataModelFactory;
 import com.sdl.odata.jpa.model.PhotoItem;
 import com.sdl.odata.jpa.model.User;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.EntityManager;
 
 /**
  * @author Renze de Vries
  */
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = ServiceContainer.class)
+@ActiveProfiles("test")
 public class JPAODataEntityGeneratorImplTest {
+    @Autowired
+    private EntityManager entityManager;
+
     private static final Logger LOG = LoggerFactory.getLogger(JPAODataEntityGeneratorImplTest.class);
 
     private static final List<Class<?>> ENTITIES = new ArrayList<Class<?>>() { {
@@ -39,9 +51,11 @@ public class JPAODataEntityGeneratorImplTest {
         add(User.class);
     } };
 
+
     @Test
     public void testGenerateODataEntities() throws ODataDataSourceException, ODataEdmException {
         JPAODataEntityGeneratorImpl generator = new JPAODataEntityGeneratorImpl();
+        generator.setEntityManager(entityManager);
         generator.setOdataNamespace("Sdl.ContentDelivery");
 
         List<Class<?>> odataClasses = generator.generateODataEntityClasses(ENTITIES);

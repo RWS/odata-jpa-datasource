@@ -39,7 +39,7 @@ public class JpaPostProcessor implements PersistenceUnitPostProcessor {
 
     private ClassPathScanningCandidateComponentProvider provider;
 
-    @Value("${datasource.entitymodel}")
+    @Value("${odata.entitymodel}")
     private String entityModel;
 
 

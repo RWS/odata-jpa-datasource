@@ -26,6 +26,7 @@ import com.sdl.odata.datasource.jpa.ODataJPAEntity;
 import com.sdl.odata.datasource.jpa.ODataJPAProperty;
 
 import javax.persistence.Entity;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -109,7 +110,11 @@ public final class JPAMetadataUtil {
         }
 
         Field field = property.getJavaField();
-        ODataJPAProperty jpaPropertyAnno = field.getAnnotation(ODataJPAProperty.class);
+        PropertyDescriptor propertyDescriptor = property.getPropertyDescriptor();
+        ODataJPAProperty jpaPropertyAnno = propertyDescriptor.getReadMethod()
+                .getAnnotation(ODataJPAProperty.class) != null
+                ? propertyDescriptor.getReadMethod().getAnnotation(ODataJPAProperty.class)
+                : field.getAnnotation(ODataJPAProperty.class);
         String jpaPropertyName = jpaPropertyAnno.value();
         if (Strings.isNullOrEmpty(jpaPropertyName)) {
             jpaPropertyName = field.getName();

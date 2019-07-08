@@ -15,19 +15,27 @@
  */
 package com.sdl.odata.jpa;
 
+import javax.persistence.EntityManagerFactory;
+
 import com.sdl.odata.service.ODataServiceConfiguration;
 import com.sdl.odata.datasource.jpa.JPADataSourceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * @author Renze de Vries
@@ -36,10 +44,12 @@ import org.springframework.context.annotation.Import;
 @EnableAutoConfiguration(exclude = {HibernateJpaAutoConfiguration.class, DataSourceAutoConfiguration.class,
         DataSourceTransactionManagerAutoConfiguration.class })
 @Import({
-        JPADataSourceConfiguration.class,
-        ODataServiceConfiguration.class
-})
-@ComponentScan
+                JPADataSourceConfiguration.class,
+                ODataServiceConfiguration.class
+        })
+@EnableJpaRepositories
+@EnableAspectJAutoProxy
+@EnableTransactionManagement(proxyTargetClass = false)
 public class ServiceContainer {
     private static final Logger LOG = LoggerFactory.getLogger(ServiceContainer.class);
 
@@ -51,6 +61,12 @@ public class ServiceContainer {
         springApplication.run(args);
 
         LOG.info("JPA Service application container started");
+    }
+
+    @Bean
+    public PlatformTransactionManager getPlatformTransactionManager(
+            @Autowired EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
     }
 
 }

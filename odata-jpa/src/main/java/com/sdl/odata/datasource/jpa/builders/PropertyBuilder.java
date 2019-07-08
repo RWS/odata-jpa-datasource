@@ -15,102 +15,175 @@
  */
 package com.sdl.odata.datasource.jpa.builders;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.time.temporal.Temporal;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Supplier;
+import javax.persistence.Column;
+import javax.persistence.EntityManager;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.EntityType;
+
+import com.google.common.collect.ImmutableMap;
 import com.sdl.odata.api.edm.annotations.EdmNavigationProperty;
 import com.sdl.odata.api.edm.annotations.EdmProperty;
 import com.sdl.odata.datasource.jpa.ODataJPAProperty;
 import com.sdl.odata.datasource.jpa.exceptions.JPADataMappingException;
+import com.sdl.odata.edm.model.PrimitiveTypeNameResolver;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
+import javassist.CtMember;
+import javassist.CtMethod;
+import javassist.CtNewMethod;
+import javassist.CtPrimitiveType;
+import javassist.LoaderClassPath;
 import javassist.NotFoundException;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.SignatureAttribute;
 import javassist.bytecode.annotation.Annotation;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.function.Supplier;
 
 /**
  * @author Renze de Vries
  */
 public class PropertyBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(PropertyBuilder.class);
+    private static final PrimitiveTypeNameResolver PRIMITIVE_TYPE_NAME_RESOLVER = new PrimitiveTypeNameResolver();
 
-    private final ClassPool pool = ClassPool.getDefault();
+    private final ClassPool pool;
 
     private final Class<?> jpaType;
     private final CtClass generatedClass;
     private final ConstPool constPool;
     private final TransformContext context;
+    private volatile EntityManager entityManager;
 
-    public PropertyBuilder(TransformContext context, Class<?> jpaType, CtClass generatedClass) {
+    public PropertyBuilder(TransformContext context, Class<?> jpaType, CtClass generatedClass
+            , EntityManager entityManager) {
         this.context = context;
         this.jpaType = jpaType;
         this.generatedClass = generatedClass;
         this.constPool = generatedClass.getClassFile().getConstPool();
+        this.pool = generatedClass.getClassPool();
+        this.entityManager = entityManager;
     }
 
     public void build() throws JPADataMappingException {
         try {
             BeanInfo beanInfo = Introspector.getBeanInfo(jpaType);
-            for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
-                LOG.debug("Processing property: {}", propertyDescriptor.getName());
-
-                MethodInfo methodInfo = new MethodInfo(propertyDescriptor.getReadMethod());
-                if (methodInfo.isValid()) {
-                    if (methodInfo.isPrimitiveType()) {
-                        generateField(methodInfo.getReturnType(), propertyDescriptor.getName());
-                    } else {
-                        generateComplexRelation(propertyDescriptor, methodInfo);
-                    }
+            EntityType<?> entityType = entityManager.getMetamodel().entity(jpaType);
+            Set<Attribute<?, ?>> attributes = new LinkedHashSet<>(entityType.getDeclaredAttributes());
+            attributes.addAll(entityType.getAttributes());
+            for (Attribute<?, ?> attribute : attributes) {
+                Class<?> attributeJavaType = attribute.getJavaType();
+                if (attributeJavaType.isEnum()) {
+                    throw new IllegalArgumentException(
+                            "Enumerated types not implemented at this moment as OData "
+                            + "generally maps them as INT " + attributeJavaType
+                                    .getName());
+                } else if (attributeJavaType.isPrimitive() ||
+                           PRIMITIVE_TYPE_NAME_RESOLVER.resolveTypeName(attributeJavaType) != null
+                           || attributeJavaType.isAssignableFrom(String.class)
+                           || UUID.class.isAssignableFrom(attributeJavaType)
+                           || Date.class.isAssignableFrom(attributeJavaType)
+                           || Temporal.class.isAssignableFrom(attributeJavaType)) {
+                    generateMember(attribute);
+                } else {
+                    generateComplexRelation(attribute);
                 }
-
             }
         } catch (IntrospectionException e) {
             throw new JPADataMappingException("Unable to map properties for entity: " + jpaType.getName(), e);
         }
     }
 
-    private void generateComplexRelation(PropertyDescriptor propertyDescriptor, MethodInfo readMethodInfo)
+    private void generateComplexRelation(Attribute<?, ?> attribute)
             throws JPADataMappingException {
-        Class<?> propertyType = propertyDescriptor.getPropertyType();
+        Class<?> propertyType = attribute.getJavaType();
         if (pool.getOrNull(propertyType.getName()) == null) {
-            pool.makeClass(readMethodInfo.getReturnType().getName());
+            pool.makeClass(attribute.getJavaType().getName());
         }
 
         try {
             CtClass fieldType = pool.get(propertyType.getName());
-            String propertyName = propertyDescriptor.getName();
-            if (readMethodInfo.isCollection()) {
-                Method readMethod = propertyDescriptor.getReadMethod();
-                Type genericReturnType = readMethod.getGenericReturnType();
-                Class<?> genericType = getCollectionElementType(genericReturnType);
-                String odataTypeName = GeneratorUtil.getODataTypeName(genericType.getPackage().getName(),
-                        genericType, context.getOdataNamespace());
+            String propertyName = attribute.getName();
+           if (propertyType.isEnum()) {
+               String odataTypeName = GeneratorUtil.getODataTypeName(propertyType.getPackage().getName(),
+                                                                     propertyType, context.getOdataNamespace());
+               LOG.debug("Generating enumeration: {}", propertyType.getName());
+               if (pool.getOrNull(odataTypeName) == null) {
+                   pool.makeClass(odataTypeName);
+               }
+               CtClass generatedClass = pool.get(odataTypeName);
 
-                LOG.debug("Generating collection of complex types: {}", propertyDescriptor.getPropertyType().getName());
-                CtField field = generateField(fieldType, propertyName,
-                        () -> generateNavigationAnnotation(propertyName));
-                String listSig = new SignatureAttribute.ClassType(propertyType.getName(),
-                        new SignatureAttribute.TypeArgument[] {
-                        new SignatureAttribute.TypeArgument(new SignatureAttribute.ClassType(odataTypeName))
-                }).encode();
-                field.setGenericSignature(listSig);
+               LOG.debug("Generating field of type: {}", odataTypeName);
+               generateMember(generatedClass, attribute.getName(),
+                              () -> generateAnnotation(attribute, attribute.getName()));
+           } else if (attribute.isCollection()) {
+                Type collectionType = null;
+                Class<?> itemType = null;
+                Member javaMember = attribute.getJavaMember();
+                if (javaMember instanceof Field) {
+                    collectionType = ((Field) javaMember).getGenericType();
+
+                } else if (javaMember instanceof Method) {
+                    collectionType = ((Method) javaMember).getGenericReturnType();
+                }
+               if (collectionType instanceof ParameterizedType) {
+                   itemType = Class.forName(((ParameterizedType) collectionType)
+                                                    .getActualTypeArguments()[0].getTypeName());
+               }
+                String odataTypeName = GeneratorUtil.getODataTypeName(itemType.getPackage().getName(),
+                                                                      itemType, context.getOdataNamespace());
+
+                LOG.debug("Generating collection of complex types: {}", itemType.getName());
+                Map<String, CtMember> members = generateMember(fieldType, propertyName,
+                                               () -> generateNavigationAnnotation(propertyName));
+                SignatureAttribute.ClassType classType = new SignatureAttribute.ClassType(propertyType.getName(),
+                                                 new SignatureAttribute.TypeArgument[] {
+                                                         new SignatureAttribute.TypeArgument(
+                                                                 new SignatureAttribute.ClassType(odataTypeName))
+                                                 });
+                String fieldSig = classType.encode();
+                String getterSig = new SignatureAttribute.MethodSignature(null,
+                                                                          null,
+                                                                          classType,
+                                                                          null).encode();
+                String setterSig = new SignatureAttribute.MethodSignature(
+                       null,
+                       new SignatureAttribute.Type[]{classType},
+                       new SignatureAttribute.ClassType(void.class.getName()),
+                       null).encode();
+               if (members.containsKey("field")) {
+                   members.get("field").setGenericSignature(fieldSig);
+               }
+               if (members.containsKey("getter")) {
+                   members.get("getter").setGenericSignature(getterSig);
+               }
+               if (members.containsKey("setter")) {
+                   members.get("setter").setGenericSignature(setterSig);
+               }
             } else if (context.containsJpaType(propertyType)) {
                 String odataTypeName = GeneratorUtil.getODataTypeName(propertyType.getPackage().getName(),
                         propertyType, context.getOdataNamespace());
@@ -118,43 +191,62 @@ public class PropertyBuilder {
                     pool.makeClass(odataTypeName);
                 }
                 CtClass generatedClass = pool.get(odataTypeName);
+                pool.appendClassPath(new LoaderClassPath(PropertyBuilder.class.getClassLoader()));
 
                 LOG.debug("Generating field of type: {}", odataTypeName);
-                generateField(generatedClass, propertyDescriptor.getName(),
-                        () -> generateNavigationAnnotation(propertyDescriptor.getName()));
+                generateMember(generatedClass, attribute.getName(),
+                               () -> generateNavigationAnnotation(attribute.getName()));
             } else {
-                throw new JPADataMappingException("Found a complex relation type of an unmapped JPA type");
+                throw new JPADataMappingException("Found a complex relation type of an unmapped JPA type " +
+                                                  propertyType);
             }
+        } catch (ClassNotFoundException  e) {
+            throw new JPADataMappingException("Unable to find property return type for property: " +
+                                              attribute.getName(), e);
         } catch (NotFoundException e) {
             throw new JPADataMappingException("Unable to find property return type for property: " +
-                    propertyDescriptor.getName(), e);
+                                              attribute.getName(), e);
         }
     }
 
-    private CtField generateField(CtClass fieldType, String propertyName, Supplier<AnnotationsAttribute> s)
-            throws JPADataMappingException {
+    private Map<String, CtMember> generateMember(CtClass fieldType, String propertyName,
+                                                 Supplier<AnnotationsAttribute> s) throws JPADataMappingException {
         try {
-            CtField field = new CtField(fieldType, propertyName, generatedClass);
+
+            String methodPropName = StringUtils.capitalize(propertyName);
+            CtClass wrapperType = fieldType.isPrimitive() ?
+                    pool.getOrNull(((CtPrimitiveType) fieldType).getWrapperName()) : fieldType;
+
+
+            CtField field = new CtField(wrapperType, propertyName, generatedClass);
             AnnotationsAttribute annotationsAttribute = s.get();
             annotationsAttribute.addAnnotation(generateJpaPropertyAnnotation());
-            field.getFieldInfo().addAttribute(annotationsAttribute);
-
+//            field.getFieldInfo().addAttribute(annotationsAttribute);
+            field.setModifiers(Modifier.PRIVATE);
             generatedClass.addField(field);
 
-            return field;
-        } catch (CannotCompileException e) {
+            CtMethod getter = CtNewMethod.getter("get" + methodPropName, field);
+            getter.getMethodInfo().addAttribute(annotationsAttribute);
+            CtMethod setter =
+                    CtNewMethod.setter("set" + methodPropName, field);
+            setter.insertAfter(String.format("_setProperty(\"%s\", $1); ", field.getName(), propertyName));
+
+            generatedClass.addMethod(getter);
+            generatedClass.addMethod(setter);
+
+            return ImmutableMap.of("field", field, "getter", getter, "setter", setter);
+        } catch (CannotCompileException | SecurityException e) {
             throw new JPADataMappingException("Unable to generate field: " + propertyName, e);
         }
     }
 
-    private void generateField(Class<?> propertyType, String propertyName) {
-        try {
-            CtClass fieldType = pool.get(propertyType.getName());
+    private void generateMember(Attribute<?, ?> attribute) {
+            CtClass fieldType = pool.getOrNull(attribute.getJavaType().getName());
+            if (fieldType == null) {
+                fieldType = pool.makeClass(attribute.getJavaType().getName());
+            }
 
-            generateField(fieldType, propertyName, () -> generateAnnotation(propertyName));
-        } catch (NotFoundException e) {
-            throw new JPADataMappingException("Unable to generate field: " + propertyName, e);
-        }
+            generateMember(fieldType, attribute.getName(), () -> generateAnnotation(attribute, attribute.getName()));
     }
 
     private AnnotationsAttribute generateNavigationAnnotation(String propertyName) throws JPADataMappingException {
@@ -170,10 +262,15 @@ public class PropertyBuilder {
         return new AnnotationBuilder(constPool, ODataJPAProperty.class).build();
     }
 
-    private AnnotationsAttribute generateAnnotation(String propertyName) throws JPADataMappingException {
+    private AnnotationsAttribute generateAnnotation(Attribute<?, ?> attribute,
+                                                    String propertyName) throws JPADataMappingException {
+        boolean isNullable = true;
+//      //Due to partial updates and selecting of specific properties, every OData entity property must be optional
+//        if (attribute instanceof SingularAttribute)
+//            isNullable = ((SingularAttribute)attribute).isOptional() || ((SingularAttribute<?, ?>) attribute).isId();
         AnnotationsAttribute fieldAttribute = new AnnotationsAttribute(constPool, AnnotationsAttribute.visibleTag);
         Annotation propertyAnnotation = new AnnotationBuilder(constPool, EdmProperty.class)
-                .addValue("name", propertyName).build();
+                .addValue("name", propertyName).addValue("nullable", isNullable).build();
         fieldAttribute.addAnnotation(propertyAnnotation);
 
         return fieldAttribute;
