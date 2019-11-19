@@ -76,12 +76,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <spring.boot.version>2.1.5.RELEASE</spring.boot.version>
-        <jackson.version>2.9.8</jackson.version>
+        <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
+        <jackson.version>2.10.1</jackson.version>
 
         <java.version>1.8</java.version>
 
-        <odata.version>2.7-SNAPSHOT</odata.version>
+        <odata.version>2.8-SNAPSHOT</odata.version>
     </properties>
 
     <!-- Dependency management -->
@@ -115,7 +115,7 @@
                 <!-- Import dependency management from Spring Boot -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-parent</artifactId>
-                <version>${spring.boot.version}</version>
+                <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -135,7 +135,7 @@
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>${spring.boot.version}</version>
+                    <version>${spring-boot.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
