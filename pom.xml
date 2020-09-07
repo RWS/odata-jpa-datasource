@@ -76,11 +76,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <spring.boot.version>1.3.5.RELEASE</spring.boot.version>
-
+        <spring.boot.version>2.3.0.RELEASE</spring.boot.version>
         <java.version>1.8</java.version>
 
-        <odata.version>2.1.1</odata.version>
+        <odata.version>2.9.0</odata.version>
     </properties>
 
     <!-- Dependency management -->
@@ -179,12 +178,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>2.15</version>
+                    <version>3.1.1</version>
                     <dependencies>
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>6.6</version>
+                            <version>8.29</version>
                         </dependency>
                     </dependencies>
                 </plugin>
