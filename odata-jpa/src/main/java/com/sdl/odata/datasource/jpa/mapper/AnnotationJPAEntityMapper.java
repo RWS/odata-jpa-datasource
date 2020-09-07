@@ -26,9 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.sdl.odata.util.AnnotationsUtil.checkAnnotationPresent;
 import static com.sdl.odata.util.AnnotationsUtil.getAnnotation;
@@ -60,6 +58,23 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
         return odataEntityToJPA(odataEntity, entityDataModel, new HashMap<>());
     }
 
+    @Override
+    public List<Object> convertODataEntitiesListToDS(List<Object> list, EntityDataModel entityDataModel) throws ODataDataSourceException {
+        List<Object> objects = new ArrayList<>();
+        for (Object item : list) {
+            objects.add(odataEntityToJPA(item, entityDataModel, new HashMap<>()));
+        }
+        return objects;
+    }
+
+    @Override
+    public <R> List<R> convertDSEntitiesListToOData(List<Object> list, Class<R> aClass, EntityDataModel entityDataModel) throws ODataDataSourceException {
+        List<R> objects = new ArrayList<>();
+        for (Object item : list) {
+            objects.add(jpaEntityToOData(item, aClass, entityDataModel, new HashMap<>()));
+        }
+        return objects;
+    }
 
     private Object odataEntityToJPA(final Object odataEntity, final EntityDataModel entityDataModel,
                                     final Map<Object, Object> visitedEntities)
