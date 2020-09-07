@@ -39,6 +39,7 @@
     <modules>
         <module>odata-jpa</module>
         <module>odata-jpa-test</module>
+        <module>odata-jpa-checkstyle</module>
     </modules>
 
     <organization>
@@ -174,6 +175,18 @@
                         </excludes>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.1.1</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>8.29</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -273,8 +286,37 @@
         </profile>
         <profile>
             <id>checkstyle</id>
+            <activation>
+                <file>
+                    <missing>src/etc/no-checkstyle-on-compile.txt</missing>
+                </file>
+            </activation>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <configuration>
+                            <configLocation>
+                                odata-jpa-checkstyle/src/main/resources/sdl_common_checkstyle.xml
+                            </configLocation>
+                            <enableRulesSummary>true</enableRulesSummary>
+                            <failOnViolation>true</failOnViolation>
+                            <failsOnError>true</failsOnError>
+                            <consoleOutput>true</consoleOutput>
+                            <logViolationsToConsole>true</logViolationsToConsole>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>checkstyle-check</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>

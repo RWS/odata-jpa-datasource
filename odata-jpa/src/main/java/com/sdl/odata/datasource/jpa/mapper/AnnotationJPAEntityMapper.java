@@ -26,8 +26,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.getField;
+import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.newInstance;
+import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.readField;
+import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.writeField;
 import static com.sdl.odata.util.AnnotationsUtil.checkAnnotationPresent;
 import static com.sdl.odata.util.AnnotationsUtil.getAnnotation;
 import static com.sdl.odata.util.edm.EntityDataModelUtil.createPropertyCollection;
@@ -36,10 +42,6 @@ import static com.sdl.odata.util.edm.EntityDataModelUtil.getPropertyValue;
 import static com.sdl.odata.util.edm.EntityDataModelUtil.isStructuredType;
 import static com.sdl.odata.util.edm.EntityDataModelUtil.setPropertyValue;
 import static com.sdl.odata.util.edm.EntityDataModelUtil.visitProperties;
-import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.getField;
-import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.newInstance;
-import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.readField;
-import static com.sdl.odata.datasource.jpa.util.ReflectionUtil.writeField;
 
 /**
  * Implementation of {@link EntityMapper} that converts between OData entities
@@ -59,8 +61,9 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
     }
 
     @Override
-    public List<Object> convertODataEntitiesListToDS(List<Object> list, EntityDataModel entityDataModel) throws ODataDataSourceException {
-        List<Object> objects = new ArrayList<>();
+    public List<Object> convertODataEntitiesListToDS(java.util.List<Object> list, EntityDataModel entityDataModel)
+            throws ODataDataSourceException {
+        List<Object> objects = new java.util.ArrayList<>();
         for (Object item : list) {
             objects.add(odataEntityToJPA(item, entityDataModel, new HashMap<>()));
         }
@@ -68,8 +71,16 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
     }
 
     @Override
-    public <R> List<R> convertDSEntitiesListToOData(List<Object> list, Class<R> aClass, EntityDataModel entityDataModel) throws ODataDataSourceException {
-        List<R> objects = new ArrayList<>();
+    public <T> T convertDSEntityToOData(Object jpaEntity, Class<T> odataEntityClass, EntityDataModel entityDataModel)
+            throws ODataDataSourceException {
+        return jpaEntityToOData(jpaEntity, odataEntityClass, entityDataModel, new HashMap<>());
+    }
+
+    @Override
+    public <R> List<R> convertDSEntitiesListToOData(java.util.List<Object> list, Class<R> aClass,
+                                                    EntityDataModel entityDataModel)
+            throws ODataDataSourceException {
+        List<R> objects = new java.util.ArrayList<>();
         for (Object item : list) {
             objects.add(jpaEntityToOData(item, aClass, entityDataModel, new HashMap<>()));
         }
@@ -109,7 +120,7 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
                 // If the value is not null and the property is of a structured type, then map value(s) recursively
                 if (odataValue != null && isStructuredType(getPropertyType(entityDataModel, property))) {
                     if (property.isCollection()) {
-                        Collection<Object> result = createPropertyCollection(property);
+                        java.util.Collection<Object> result = createPropertyCollection(property);
                         for (Object element : (Iterable<?>) odataValue) {
                             result.add(odataEntityToJPA(element, entityDataModel, visitedEntities));
                         }
@@ -124,12 +135,6 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
         });
 
         return jpaEntity;
-    }
-
-    @Override
-    public <T> T convertDSEntityToOData(Object jpaEntity, Class<T> odataEntityClass, EntityDataModel entityDataModel)
-            throws ODataDataSourceException {
-        return jpaEntityToOData(jpaEntity, odataEntityClass, entityDataModel, new HashMap<>());
     }
 
     private <T> T jpaEntityToOData(final Object jpaEntity, Class<T> odataEntityClass,
@@ -164,7 +169,7 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
                 if (jpaValue != null && isStructuredType(getPropertyType(entityDataModel, property))) {
                     Class<?> targetType = getPropertyType(entityDataModel, property).getJavaType();
                     if (property.isCollection()) {
-                        Collection<Object> result = createPropertyCollection(property);
+                        java.util.Collection<Object> result = createPropertyCollection(property);
                         for (Object element : (Iterable<?>) jpaValue) {
                             result.add(jpaEntityToOData(element, targetType, entityDataModel, visitedEntities));
                         }
