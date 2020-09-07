@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +121,7 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
                 // If the value is not null and the property is of a structured type, then map value(s) recursively
                 if (odataValue != null && isStructuredType(getPropertyType(entityDataModel, property))) {
                     if (property.isCollection()) {
-                        java.util.Collection<Object> result = createPropertyCollection(property);
+                        Collection<Object> result = createPropertyCollection(property);
                         for (Object element : (Iterable<?>) odataValue) {
                             result.add(odataEntityToJPA(element, entityDataModel, visitedEntities));
                         }
@@ -169,7 +170,7 @@ public class AnnotationJPAEntityMapper implements EntityMapper<Object, Object> {
                 if (jpaValue != null && isStructuredType(getPropertyType(entityDataModel, property))) {
                     Class<?> targetType = getPropertyType(entityDataModel, property).getJavaType();
                     if (property.isCollection()) {
-                        java.util.Collection<Object> result = createPropertyCollection(property);
+                        Collection<Object> result = createPropertyCollection(property);
                         for (Object element : (Iterable<?>) jpaValue) {
                             result.add(jpaEntityToOData(element, targetType, entityDataModel, visitedEntities));
                         }
